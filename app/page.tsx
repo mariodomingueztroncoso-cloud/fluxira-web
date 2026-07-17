@@ -5,47 +5,47 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-white p-6 md:p-24 font-sans text-gray-900">
       
-      {/* Contenedor Principal (Tarjeta Blanca con Sombra Suave) */}
-      <div className="z-10 w-full max-w-5xl flex flex-col items-center justify-between p-12 bg-white rounded-3xl shadow-sm border border-gray-100">
+      {/* Tarjeta Principal */}
+      <div className="z-10 w-full max-w-2xl flex flex-col items-center justify-between p-8 md:p-12 bg-white rounded-3xl shadow-sm border border-gray-100 text-center">
         
-        {/* Cabecera con el Logo (Cargado desde /public/logo.png) */}
-        <div className="mb-12 flex justify-center w-full">
+        {/* Tu Logo Oficial */}
+        <div className="mb-10 flex justify-center w-full">
           <Image
-            src="/logo.png" // <--- Aquí cargamos tu logo
+            src="/logo.png"
             alt="Fluxira Logo"
-            width={400} // Ajusta el ancho según prefieras
-            height={100} // Ajusta el alto proporcionalmente
-            priority // Carga esta imagen primero
-            className="h-auto w-auto max-w-[300px] md:max-w-[400px]"
+            width={350}
+            height={90}
+            priority
+            className="h-auto w-auto max-w-[260px] md:max-w-[350px]"
           />
         </div>
 
-        {/* Sección de Bienvenida e Introducción */}
-        <div className="text-center mb-16 space-y-6 max-w-3xl">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-gray-950">
-            Bienvenido a la Plataforma Fluxira
+        {/* Mensaje directo sobre las facturas */}
+        <div className="space-y-4 mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-950">
+            Portal de Envío de Facturas
           </h1>
-          <p className="text-xl text-gray-700 leading-relaxed">
-            Gestión inteligente y monitorización energética para la industria. Optimiza tus recursos y reduce costes con nuestra tecnología IoT de vanguardia.
+          <p className="text-lg text-gray-600 leading-relaxed">
+            Bienvenido al canal oficial de recepción de facturas de Fluxira. Utiliza nuestra herramienta segura para enviarnos tus documentos en formato PDF de manera rápida.
           </p>
         </div>
 
-        {/* Botón de Acción Principal (con tu color azul turquesa #0087A5) */}
+        {/* El Botón que lleva directo al formulario */}
         <div className="flex justify-center w-full">
-          <Link href="/contacto" className="group rounded-full border border-transparent bg-[#0087A5] px-10 py-4 text-lg font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg flex items-center gap-3">
-            Comenzar / Contactar
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+          <Link href="/contacto" className="group rounded-full bg-[#0087A5] px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg flex items-center gap-2">
+            Enviar Factura
+            <span className="inline-block transition-transform group-hover:translate-x-1">
               -&gt;
             </span>
           </Link>
         </div>
 
-      {/* Pie de página sutil */}
-        <footer className="absolute bottom-6 left-0 right-0 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} Fluxira S.L. Todos los derechos reservados.
-        </footer>
-
       </div>
+
+      {/* Pie de página */}
+      <footer className="absolute bottom-6 text-center text-xs text-gray-400">
+        © {new Date().getFullYear()} Fluxira S.L. Todos los derechos reservados.
+      </footer>
     </main>
   );
 }
