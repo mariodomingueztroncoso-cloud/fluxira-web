@@ -17,17 +17,18 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes);
 
     // Configuramos el motor de envíos (Usa tu Gmail)
+    // Configuramos el motor de envíos usando variables ocultas y seguras
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'mario.fluxira@gmail.com', // <-- CAMBIA ESTO POR TU EMAIL
-        pass: 'vaezgekcalnclxel ', // <-- AQUÍ IRÁ TU CLAVE DE APLICACIÓN DE GOOGLE
+        user: process.env.GMAIL_USER, // <-- Node leerá esto de forma oculta en Vercel
+        pass: process.env.GMAIL_PASS, // <-- Node leerá esto de forma oculta en Vercel
       },
     });
 
     const mailOptions = {
       from: 'Fluxira Web <mario@fluxira.es>',
-      to: 'mario.fluxira@gmail.com', // Te lo mandas a ti mismo
+      to: process.env.GMAIL_USER, // Te llegará directamente a la cuenta que configures
       subject: `Nueva factura para analizar - ${name}`,
       text: `Nombre del negocio: ${name}\nTeléfono/WhatsApp: ${phone}`,
       attachments: [
