@@ -1,47 +1,61 @@
-import { NextResponse } from 'next/server';
+// app/api/analizar/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-
-    if (!file) {
-      return NextResponse.json({ error: 'No se ha recibido ningún archivo' }, { status: 400 });
+    // 1. Verificar que las variables de entorno existen ANTES de nada
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+      console.error('Faltan variables de entorno SMTP:', {
+        SMTP_HOST: !!SMTP_HOST,
+        SMTP_PORT: !!SMTP_PORT,
+        SMTP_USER: !!SMTP_USER,
+        SMTP_PASS: !!SMTP_PASS,
+      });
+      return NextResponse.json(
+        { error: 'Configuración del servidor incompleta.' },
+        { status: 500 }
+      );
     }
 
+    // 2. Parsear el FormData
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    const nombre = formData.get('nombre')?.toString() || 'Sin nombre';
+    const contacto = formData.get('contacto')?.toString() || 'Sin contacto';
+
+    if (!file) {
+      return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
+    }
+
+    // 3. Convertir el archivo a Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // 4. Configurar Nodemailer
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+      host: SMTP_HOST,
+      port: Number(SMTP_PORT),          // 587 => STARTTLS
+      secure: Number(SMTP_PORT) === 465, // true solo si usas el puerto 465
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
     });
 
-    const mailOptions = {
-      from: process.env.SMTP_USER,
-      to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER,
-      subject: `📥 Nueva Factura Recibida - Fluxira`,
-      text: `Has recibido una nueva factura para analizar a través del portal web.\n\nArchivo adjunto: ${file.name}`,
-      attachments: [
-        {
-          filename: file.name,
-          content: buffer,
-        },
-      ],
-    };
+    // 5. Enviar el correo con el PDF adjunto
+    await transporter.sendMail({
+      from: SMTP_USER,
+      to: SMTP_USER, // te lo mandas a ti mismo
+      subject: `Nueva factura de ${nombre}`,
+      text: `Nombre: ${nombre}\nContacto: ${contacto}`,
+      attachments: [{ filename: file.name, content: buffer }],
+    });
 
-    await transporter.sendMail(mailOptions);
-
-    return NextResponse.json({ success: true, message: 'Factura enviada correctamente' });
-
-  } catch (error) {
-    console.error('Error en la API de subida:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error('Error en la API de subida:', err);
+    return NextResponse.json(
+      { error: 'No se pudo procesar el envío.' },
+      { status: 500 }
+    );
   }
 }
