@@ -38,7 +38,6 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Enviamos el archivo a la API interna segura que configuramos
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -59,45 +58,56 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-white p-6 md:p-12 font-sans text-gray-900">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 md:p-12 font-sans text-gray-900">
       
       {/* Contenedor Principal */}
-      <div className="z-10 w-full max-w-xl flex flex-col items-center p-8 md:p-12 bg-white rounded-3xl shadow-sm border border-gray-100 text-center">
+      <div className="z-10 w-full max-w-2xl flex flex-col items-center p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-100">
         
         {/* Tu Logo Oficial */}
-        <div className="mb-8 flex justify-center w-full">
+        <div className="mb-6 flex justify-center w-full">
           <Image
             src="/logo.png"
             alt="Fluxira Logo"
             width={350}
             height={90}
             priority
-            className="h-auto w-auto max-w-[260px] md:max-w-[320px]"
+            className="h-auto w-auto max-w-[240px] md:max-w-[300px]"
           />
         </div>
 
-        {/* Textos directos */}
-        <div className="space-y-3 mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-950">
-            Portal de Envío de Facturas
+        {/* Textos y Descripción Corta */}
+        <div className="space-y-3 mb-8 text-center">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-950">
+            Optimización Energética Profesional
           </h1>
-          <p className="text-base text-gray-600 leading-relaxed">
-            Bienvenido al canal oficial de recepción de facturas de Fluxira. Utiliza la herramienta inferior para enviarnos tus documentos en formato PDF de forma segura.
+          <p className="text-base text-gray-600 max-w-md mx-auto leading-relaxed">
+            Ayudamos a empresas e industrias a reducir drásticamente sus costes de electricidad revisando y optimizando sus contratos actuales.
           </p>
         </div>
 
-        {/* Formulario Integrado */}
-        <form onSubmit={handleSubmit} className="w-full space-y-6 text-left">
+        {/* Bloque Destacado: El caso de éxito de los 600€ */}
+        <div className="w-full bg-[#0087A5]/5 border border-[#0087A5]/20 rounded-2xl p-4 md:p-5 mb-8 flex items-start gap-4 text-left">
+          <div className="text-xl md:text-2xl mt-0.5">💡</div>
+          <div>
+            <h4 className="font-bold text-[#0087A5] text-sm md:text-base mb-1">¿Sabías que puedes estar pagando de más?</h4>
+            <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
+              En nuestra última auditoría a un taller local, detectamos errores de facturación y potencia optimizable que les supuso un **ahorro directo de 600€**. Sube tu factura y analizamos tu caso gratis.
+            </p>
+          </div>
+        </div>
+
+        {/* Formulario de Subida Seguro */}
+        <form onSubmit={handleSubmit} className="w-full space-y-6 text-left border-b border-gray-100 pb-8 mb-6">
           <div className="flex flex-col items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-[#0087A5] transition-colors p-4 text-center">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <svg className="w-10 h-10 mb-3 text-[#0087A5]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+            <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-[#0087A5] transition-colors p-4 text-center">
+              <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                <svg className="w-8 h-8 mb-2 text-[#0087A5]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                 </svg>
-                <p className="mb-2 text-sm text-gray-700">
-                  <span className="font-semibold text-[#0087A5]">Haz clic para adjuntar</span> o arrastra tu archivo
+                <p className="mb-1 text-xs md:text-sm text-gray-700">
+                  <span className="font-semibold text-[#0087A5]">Haz clic para adjuntar</span> o arrastra tu factura
                 </p>
-                <p className="text-xs text-gray-400">Solo formato PDF</p>
+                <p className="text-[11px] text-gray-400">Solo formato PDF</p>
               </div>
               <input 
                 ref={fileInputRef}
@@ -109,7 +119,6 @@ export default function Home() {
             </label>
           </div>
 
-          {/* Nombre del archivo seleccionado */}
           {file && (
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center space-x-3">
               <span className="text-sm text-gray-700 font-medium truncate flex-1">
@@ -125,27 +134,41 @@ export default function Home() {
             </div>
           )}
 
-          {/* Mensajes de Estado (Éxito / Error) */}
           {message && (
             <div className={`p-4 rounded-xl text-sm font-medium ${status === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
               {message}
             </div>
           )}
 
-          {/* Botón de Envío */}
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full rounded-full bg-[#0087A5] py-4 text-base font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full rounded-full bg-[#0087A5] py-3.5 text-base font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {status === 'loading' ? 'Enviando factura...' : 'Enviar Factura'}
+            {status === 'loading' ? 'Enviando factura...' : 'Enviar Factura para Estudio Gratis'}
           </button>
         </form>
+
+        {/* Datos de Contacto Directos (Teléfono y Correo) */}
+        <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span>📞</span>
+            <a href="tel:+34 661 00 58 64" className="hover:text-[#0087A5] hover:underline font-medium">
+              +34 661 00 58 64
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>✉️</span>
+            <a href="mailto:mario@fluxira.es" className="hover:text-[#0087A5] hover:underline font-medium">
+              mario@fluxira.es
+            </a>
+          </div>
+        </div>
 
       </div>
 
       {/* Pie de página */}
-      <footer className="absolute bottom-6 text-center text-xs text-gray-400">
+      <footer className="mt-6 text-center text-xs text-gray-400">
         © {new Date().getFullYear()} Fluxira S.L. Todos los derechos reservados.
       </footer>
     </main>
