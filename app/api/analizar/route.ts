@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const nombre = formData.get('nombre')?.toString() || 'Sin nombre';
     const contacto = formData.get('contacto')?.toString() || 'Sin contacto';
+    const email = formData.get('email')?.toString() || '';
 
     if (!file) {
       return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
@@ -36,17 +37,18 @@ export async function POST(req: NextRequest) {
     // 4. Configurar Nodemailer
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
-      port: Number(SMTP_PORT),          // 587 => STARTTLS
-      secure: Number(SMTP_PORT) === 465, // true solo si usas el puerto 465
+      port: Number(SMTP_PORT),
+      secure: Number(SMTP_PORT) === 465,
       auth: { user: SMTP_USER, pass: SMTP_PASS },
     });
 
     // 5. Enviar el correo con el PDF adjunto
+    const emailLine = email ? `\nEmail:    ${email}` : '';
     await transporter.sendMail({
       from: SMTP_USER,
-      to: SMTP_USER, // te lo mandas a ti mismo
+      to: SMTP_USER,
       subject: `Nueva factura de ${nombre}`,
-      text: `Nombre: ${nombre}\nContacto: ${contacto}`,
+      text: `Nombre:   ${nombre}\nContacto: ${contacto}${emailLine}`,
       attachments: [{ filename: file.name, content: buffer }],
     });
 
