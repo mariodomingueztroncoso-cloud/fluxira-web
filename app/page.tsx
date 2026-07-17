@@ -46,11 +46,11 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      // Aseguramos que use la clave exacta 'file' que espera tu backend seguro
+      // Usamos 'file' que es el estándar que espera tu backend
       formData.append('file', file); 
 
-      // Llamada directa a tu API propia ya configurada en el servidor
-      const response = await fetch('/api/upload', {
+      // CORRECCIÓN: Apuntamos a tu ruta real visible en la captura
+      const response = await fetch('/api/analizar', {
         method: 'POST',
         body: formData,
       });
@@ -109,7 +109,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Formulario Drag & Drop conectado a tu API */}
+        {/* Formulario Drag & Drop conectado a tu API real */}
         <form onSubmit={handleSubmit} className="w-full space-y-6 text-left border-b border-gray-100 pb-8 mb-6">
           <div className="flex flex-col items-center justify-center w-full">
             <div

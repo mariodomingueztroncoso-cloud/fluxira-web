@@ -10,11 +10,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se ha recibido ningún archivo' }, { status: 400 });
     }
 
-    // Convertimos el archivo recibido en un Buffer para poder adjuntarlo al correo
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Configuramos el transporte de correo usando las variables de entorno de Vercel
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -25,10 +23,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // Definimos el correo que te va a llegar a ti
     const mailOptions = {
       from: process.env.SMTP_USER,
-      to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER, // Tu correo de destino
+      to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER,
       subject: `📥 Nueva Factura Recibida - Fluxira`,
       text: `Has recibido una nueva factura para analizar a través del portal web.\n\nArchivo adjunto: ${file.name}`,
       attachments: [
@@ -39,13 +36,12 @@ export async function POST(request: Request) {
       ],
     };
 
-    // Enviamos el correo con el PDF adjunto
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ success: true, message: 'Factura enviada correctamente' });
 
   } catch (error) {
     console.error('Error en la API de subida:', error);
-    return NextResponse.json({ error: 'Error interno del servidor al procesar el archivo' }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
