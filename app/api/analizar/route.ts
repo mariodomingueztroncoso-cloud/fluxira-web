@@ -4,33 +4,33 @@ import nodemailer from 'nodemailer';
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const name = formData.get('name') as string;
-    const phone = formData.get('phone') as string;
-    const file = formData.get('attachment') as File;
+    const file = formData.get('file') as File;
 
-    if (!name || !phone || !file) {
-      return NextResponse.json({ success: false, error: 'Faltan campos requeridos' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: 'No se ha recibido ningún archivo' }, { status: 400 });
     }
 
-    // Convertimos el PDF a un formato que Node pueda leer
+    // Convertimos el archivo recibido en un Buffer para poder adjuntarlo al correo
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Configuramos el motor de envíos (Usa tu Gmail)
-    // Configuramos el motor de envíos usando variables ocultas y seguras
+    // Configuramos el transporte de correo usando las variables de entorno de Vercel
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER, // <-- Node leerá esto de forma oculta en Vercel
-        pass: process.env.GMAIL_PASS, // <-- Node leerá esto de forma oculta en Vercel
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
+    // Definimos el correo que te va a llegar a ti
     const mailOptions = {
-      from: 'Fluxira Web <mario@fluxira.es>',
-      to: process.env.GMAIL_USER, // Te llegará directamente a la cuenta que configures
-      subject: `Nueva factura para analizar - ${name}`,
-      text: `Nombre del negocio: ${name}\nTeléfono/WhatsApp: ${phone}`,
+      from: process.env.SMTP_USER,
+      to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER, // Tu correo de destino
+      subject: `📥 Nueva Factura Recibida - Fluxira`,
+      text: `Has recibido una nueva factura para analizar a través del portal web.\n\nArchivo adjunto: ${file.name}`,
       attachments: [
         {
           filename: file.name,
@@ -39,11 +39,13 @@ export async function POST(request: Request) {
       ],
     };
 
+    // Enviamos el correo con el PDF adjunto
     await transporter.sendMail(mailOptions);
-    return NextResponse.json({ success: true });
+
+    return NextResponse.json({ success: true, message: 'Factura enviada correctamente' });
 
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: 'Error al procesar' }, { status: 500 });
+    console.error('Error en la API de subida:', error);
+    return NextResponse.json({ error: 'Error interno del servidor al procesar el archivo' }, { status: 500 });
   }
 }
