@@ -115,7 +115,7 @@ export default function Home() {
           <div className="text-xl md:text-2xl mt-0.5">💡</div>
           <div>
             <h4 className="font-bold text-[#0087A5] text-sm md:text-base mb-1">¿Sabías que puedes estar pagando de más?</h4>
-            <p className="text-xs md:text-sm text-gray-700 leading-relaxed">En nuestra última auditoría a un taller local, detectamos errores de facturación y potencia optimizable que les supuso un **ahorro directo de 600€**. Sube tu factura y analizamos tu caso gratis.</p>
+            <p className="text-xs md:text-sm text-gray-700 leading-relaxed">En nuestra última auditoría a un taller local, detectamos errores de facturación y potencia optimizable que les supuso un <strong>ahorro directo de 600€</strong>. Sube tu factura y analizamos tu caso gratis.</p>
           </div>
         </div>
 
@@ -203,7 +203,9 @@ export default function Home() {
               required
             />
             <span className="text-xs text-gray-500 leading-relaxed group-hover:text-gray-700 transition-colors">
-              He leído y acepto la política de privacidad y autorizo a Fluxira a tratar mis datos para analizar mi factura. <span className="text-red-400">*</span>
+              He leído y acepto la{' '}
+              <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-[#0087A5] hover:underline font-medium">política de privacidad</a>
+              {' '}y autorizo a Fluxira a tratar mis datos para analizar mi factura. <span className="text-red-400">*</span>
             </span>
           </label>
 
@@ -223,8 +225,8 @@ export default function Home() {
 
         {/* Contacto */}
         <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 text-sm text-gray-600">
-          <div className="flex items-center gap-2"><span>📞</span><a href="tel:+34600000000" className="hover:text-[#0087A5] hover:underline font-medium">+34 600 00 00 00</a></div>
-          <div className="flex items-center gap-2"><span>✉️</span><a href="mailto:contacto@fluxira.es" className="hover:text-[#0087A5] hover:underline font-medium">contacto@fluxira.es</a></div>
+          <div className="flex items-center gap-2"><span>📞</span><a href="tel:+34661005864" className="hover:text-[#0087A5] hover:underline font-medium">+34 661 00 58 64</a></div>
+          <div className="flex items-center gap-2"><span>✉️</span><a href="mailto:mario@fluxira.es" className="hover:text-[#0087A5] hover:underline font-medium">mario@fluxira.es</a></div>
         </div>
 
       </div>
