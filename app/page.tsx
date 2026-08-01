@@ -45,6 +45,7 @@ export default function Home() {
     if (!canSubmit) return;
 
     setStatus('loading');
+    setMessage('Analizando tu factura, esto puede tardar hasta un minuto...');
 
     try {
       const formData = new FormData();
@@ -59,11 +60,22 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al subir el archivo');
+        throw new Error('Error al procesar el archivo');
       }
 
+      // La respuesta es el PDF del informe: descargarlo
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'informe_fluxira.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
       setStatus('success');
-      setMessage('¡Recibido! Te enviaré el análisis en breve por WhatsApp.');
+      setMessage('¡Listo! Tu informe se ha descargado. Revisa tu carpeta de descargas.');
       setFile(null);
       setNombre('');
       setTelefono('');
@@ -72,7 +84,7 @@ export default function Home() {
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch {
       setStatus('error');
-      setMessage('Hubo un problema al enviar la factura. Por favor, inténtalo de nuevo.');
+      setMessage('Hubo un problema al analizar la factura. Por favor, inténtalo de nuevo.');
     }
   };
 
