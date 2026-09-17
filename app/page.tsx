@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState, useRef } from 'react';
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
@@ -14,22 +14,25 @@ export default function Home() {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = (selectedFile: File) => {
-    if (selectedFile.type !== 'application/pdf') {
+  const processFiles = (selectedFiles: FileList | File[]) => {
+    const incoming = Array.from(selectedFiles);
+    const invalid = incoming.find((f) => f.type !== 'application/pdf');
+    if (invalid) {
       setStatus('error');
-      setMessage('Por favor, selecciona un archivo en formato PDF.');
-      setFile(null);
+      setMessage('Por favor, selecciona solo archivos en formato PDF.');
       return;
     }
-    setFile(selectedFile);
+    setFiles((prev) => [...prev, ...incoming]);
     setStatus('idle');
     setMessage('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
     }
+    // Permite volver a seleccionar el mismo archivo si se quitó y se añade de nuevo
+    e.target.value = '';
   };
 
   const handleBoxClick = () => {
@@ -38,7 +41,11 @@ export default function Home() {
     }
   };
 
-  const canSubmit = nombre.trim() !== '' && telefono.trim() !== '' && file !== null && rgpd;
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const canSubmit = nombre.trim() !== '' && telefono.trim() !== '' && files.length > 0 && rgpd;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +56,7 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file!);
+      files.forEach((f) => formData.append('files', f));
       formData.append('nombre', nombre.trim());
       formData.append('contacto', telefono.trim());
       if (email.trim()) formData.append('email', email.trim());
@@ -76,7 +83,7 @@ export default function Home() {
 
       setStatus('success');
       setMessage('¡Listo! Tu informe se ha descargado. Revisa tu carpeta de descargas.');
-      setFile(null);
+      setFiles([]);
       setNombre('');
       setTelefono('');
       setEmail('');
@@ -99,8 +106,8 @@ export default function Home() {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
     }
   };
 
@@ -177,7 +184,7 @@ export default function Home() {
 
           {/* Zona drag & drop */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Factura en PDF <span className="text-red-400">*</span></label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Factura(s) en PDF <span className="text-red-400">*</span></label>
             <div
               onClick={handleBoxClick}
               onDragEnter={handleDrag}
@@ -190,18 +197,22 @@ export default function Home() {
             >
               <div className="flex flex-col items-center justify-center pointer-events-none">
                 <svg className="w-8 h-8 mb-2 text-[#0087A5]" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                <p className="mb-1 text-xs md:text-sm text-gray-700"><span className="font-semibold text-[#0087A5]">Haz clic para adjuntar</span> o arrastra tu factura</p>
-                <p className="text-[11px] text-gray-400">Solo formato PDF</p>
+                <p className="mb-1 text-xs md:text-sm text-gray-700"><span className="font-semibold text-[#0087A5]">Haz clic para adjuntar</span> o arrastra tus facturas</p>
+                <p className="text-[11px] text-gray-400">Puedes subir varios PDF (de distintos meses)</p>
               </div>
-              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
+              <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleFileChange} />
             </div>
           </div>
 
-          {/* Archivo cargado */}
-          {file && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center space-x-3">
-              <span className="text-sm text-gray-700 font-medium truncate flex-1">📄 {file.name}</span>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-xs text-red-500 hover:underline">Quitar</button>
+          {/* Archivos cargados */}
+          {files.length > 0 && (
+            <div className="space-y-2">
+              {files.map((f, i) => (
+                <div key={`${f.name}-${i}`} className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center space-x-3">
+                  <span className="text-sm text-gray-700 font-medium truncate flex-1">📄 {f.name}</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="text-xs text-red-500 hover:underline">Quitar</button>
+                </div>
+              ))}
             </div>
           )}
 

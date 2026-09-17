@@ -20,21 +20,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Parsear el FormData
+    // 1. Parsear el FormData (ahora puede traer varios archivos con la clave 'files')
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
+    const files = formData.getAll('files') as File[];
     const nombre = formData.get('nombre')?.toString() || 'Sin nombre';
     const contacto = formData.get('contacto')?.toString() || 'Sin contacto';
     const email = formData.get('email')?.toString() || '';
 
-    if (!file) {
+    if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Convertir todos los archivos a buffer (para el email y para reenviar a la API)
+    const buffers = await Promise.all(
+      files.map(async (f) => ({
+        filename: f.name,
+        content: Buffer.from(await f.arrayBuffer()),
+      }))
+    );
 
-    // 2. Enviar aviso por email (registro para Mario)
+    // 2. Enviar aviso por email (registro para Mario), con todas las facturas adjuntas
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
       port: Number(SMTP_PORT),
@@ -46,13 +51,15 @@ export async function POST(req: NextRequest) {
       from: SMTP_USER,
       to: SMTP_USER,
       subject: `Nueva factura de ${nombre}`,
-      text: `Nombre:   ${nombre}\nContacto: ${contacto}${emailLine}`,
-      attachments: [{ filename: file.name, content: buffer }],
+      text: `Nombre:   ${nombre}\nContacto: ${contacto}${emailLine}\nFacturas: ${files.length}`,
+      attachments: buffers.map((b) => ({ filename: b.filename, content: b.content })),
     });
 
-    // 3. Llamar a la API de análisis (Railway)
+    // 3. Llamar a la API de análisis (Railway), reenviando todas las facturas
     const apiFormData = new FormData();
-    apiFormData.append('files', new Blob([buffer], { type: 'application/pdf' }), file.name);
+    buffers.forEach((b) => {
+      apiFormData.append('files', new Blob([b.content], { type: 'application/pdf' }), b.filename);
+    });
     apiFormData.append('nombre_empresa', nombre);
     apiFormData.append('nombre_instalacion', 'Instalacion');
 
