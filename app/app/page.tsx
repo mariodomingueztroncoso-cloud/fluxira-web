@@ -1,17 +1,45 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+interface Cliente {
+  id: number;
+  nombre_cliente: string;
+  cups: string | null;
+  fecha_alta: string;
+}
 
 export default function AppPanel() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [nombreEmpresa, setNombreEmpresa] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
-  const [isDragActive, setIsDragActive] = useState(false);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loadingClientes, setLoadingClientes] = useState(true);
+  const [nombreNuevo, setNombreNuevo] = useState('');
+  const [cupsNuevo, setCupsNuevo] = useState('');
+  const [creando, setCreando] = useState(false);
+  const [errorCrear, setErrorCrear] = useState('');
   const router = useRouter();
+
+  const cargarClientes = async (token: string) => {
+    setLoadingClientes(true);
+    try {
+      const response = await fetch('/api/clientes', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) {
+        localStorage.removeItem('fluxira_token');
+        router.push('/login');
+        return;
+      }
+      const data = await response.json();
+      setClientes(data);
+    } catch {
+      // Si falla la carga, dejamos la lista vacia; el usuario puede reintentar.
+    } finally {
+      setLoadingClientes(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('fluxira_token');
@@ -20,46 +48,18 @@ export default function AppPanel() {
       return;
     }
     setCheckingAuth(false);
+    cargarClientes(token);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
-
-  const processFiles = (selectedFiles: FileList | File[]) => {
-    const incoming = Array.from(selectedFiles);
-    const invalid = incoming.find((f) => f.type !== 'application/pdf');
-    if (invalid) {
-      setStatus('error');
-      setMessage('Por favor, selecciona solo archivos en formato PDF.');
-      return;
-    }
-    setFiles((prev) => [...prev, ...incoming]);
-    setStatus('idle');
-    setMessage('');
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
-    }
-    e.target.value = '';
-  };
-
-  const handleBoxClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const canSubmit = nombreEmpresa.trim() !== '' && files.length > 0;
 
   const handleLogout = () => {
     localStorage.removeItem('fluxira_token');
     router.push('/login');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCrearCliente = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (nombreNuevo.trim() === '') return;
 
     const token = localStorage.getItem('fluxira_token');
     if (!token) {
@@ -67,67 +67,36 @@ export default function AppPanel() {
       return;
     }
 
-    setStatus('loading');
-    setMessage('Analizando factura(s), esto puede tardar hasta un minuto...');
+    setCreando(true);
+    setErrorCrear('');
 
     try {
-      const formData = new FormData();
-      files.forEach((f) => formData.append('files', f));
-      formData.append('nombre_empresa', nombreEmpresa.trim());
-      formData.append('nombre_instalacion', 'Instalacion');
-
-      const response = await fetch('/api/analizar', {
+      const response = await fetch('/api/clientes', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        body: JSON.stringify({
+          nombre_cliente: nombreNuevo.trim(),
+          cups: cupsNuevo.trim() || null,
+        }),
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('fluxira_token');
-        router.push('/login');
+      if (!response.ok) {
+        const data = await response.json();
+        setErrorCrear(data.detail || 'No se pudo crear el cliente.');
+        setCreando(false);
         return;
       }
 
-      if (!response.ok) {
-        throw new Error('Error al procesar el archivo');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'informe_fluxira.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      setStatus('success');
-setMessage('Informe generado. Descargando...');
-      setFiles([]);
-      setNombreEmpresa('');
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setNombreNuevo('');
+      setCupsNuevo('');
+      await cargarClientes(token);
     } catch {
-      setStatus('error');
-setMessage('Hubo un problema al analizar la factura. Intentalo de nuevo.');
-    }
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') setIsDragActive(true);
-    else if (e.type === 'dragleave') setIsDragActive(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
+      setErrorCrear('No se pudo conectar con el servidor.');
+    } finally {
+      setCreando(false);
     }
   };
 
@@ -153,107 +122,72 @@ setMessage('Hubo un problema al analizar la factura. Intentalo de nuevo.');
         </button>
       </div>
 
-      <div className="z-10 w-full max-w-2xl flex flex-col items-center p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-100">
-        <div className="space-y-2 mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-950">Analizar factura</h1>
+      <div className="z-10 w-full max-w-2xl flex flex-col p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-100">
+        <div className="space-y-2 mb-8">
+          <h1 className="text-2xl font-bold text-gray-950">Tus clientes</h1>
           <p className="text-sm text-gray-600">
-            Sube la factura o facturas de tu cliente y descarga el informe.
+            Gestiona los clientes y consulta el historial de informes de cada uno.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              Nombre del cliente <span className="text-red-400">*</span>
-            </label>
+        {/* Formulario de nuevo cliente */}
+        <form onSubmit={handleCrearCliente} className="w-full space-y-3 mb-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Anadir cliente</p>
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              value={nombreEmpresa}
-              onChange={(e) => setNombreEmpresa(e.target.value)}
-              placeholder="Ej. Talleres Garcia"
+              value={nombreNuevo}
+              onChange={(e) => setNombreNuevo(e.target.value)}
+              placeholder="Nombre del cliente"
               className={inputClass}
               required
             />
+            <input
+              type="text"
+              value={cupsNuevo}
+              onChange={(e) => setCupsNuevo(e.target.value)}
+              placeholder="CUPS (opcional)"
+              className={inputClass}
+            />
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-              Factura(s) en PDF <span className="text-red-400">*</span>
-            </label>
-            <div
-              onClick={handleBoxClick}
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-colors p-4 text-center ${
-                isDragActive
-                  ? 'border-[#0087A5] bg-[#0087A5]/10'
-                  : 'bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-[#0087A5]'
-              }`}
-            >
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold text-[#0087A5]">Haz clic para adjuntar</span> o
-                arrastra tus facturas
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                multiple
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
-          </div>
-
-          {files.length > 0 && (
-            <div className="space-y-2">
-              {files.map((f, i) => (
-                <div
-                  key={`${f.name}-${i}`}
-                  className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center space-x-3"
-                >
-                  <span className="text-sm text-gray-700 font-medium truncate flex-1">
-                    {f.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(i);
-                    }}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              ))}
-            </div>
+          {errorCrear && (
+            <p className="text-sm text-red-600">{errorCrear}</p>
           )}
-
-          {message && (
-            <div
-              className={`p-4 rounded-xl text-sm font-medium ${
-                status === 'success'
-                  ? 'bg-green-50 text-green-700 border border-green-100'
-                  : status === 'error'
-                  ? 'bg-red-50 text-red-700 border border-red-100'
-                  : 'bg-blue-50 text-blue-700 border border-blue-100'
-              }`}
-            >
-              {message}
-            </div>
-          )}
-
           <button
             type="submit"
-            disabled={!canSubmit || status === 'loading'}
-            className="w-full rounded-full bg-[#0087A5] py-3.5 text-base font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={creando || nombreNuevo.trim() === ''}
+            className="rounded-full bg-[#0087A5] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#006e88] disabled:bg-gray-300"
           >
-            {status === 'loading' ? 'Analizando...' : 'Analizar factura'}
+            {creando ? 'Anadiendo...' : 'Anadir cliente'}
           </button>
         </form>
+
+        {/* Lista de clientes */}
+        {loadingClientes ? (
+          <p className="text-sm text-gray-400">Cargando clientes...</p>
+        ) : clientes.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">
+            Aun no tienes clientes. Anade el primero arriba.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {clientes.map((cliente) => (
+              <Link
+                key={cliente.id}
+                href={`/app/clientes/${cliente.id}`}
+                className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{cliente.nombre_cliente}</p>
+                  {cliente.cups && (
+                    <p className="text-xs text-gray-400">{cliente.cups}</p>
+                  )}
+                </div>
+                <span className="text-[#0087A5] text-sm font-medium">Ver &rarr;</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
