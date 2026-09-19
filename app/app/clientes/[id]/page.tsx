@@ -110,7 +110,33 @@ export default function DetalleCliente() {
       processFiles(e.dataTransfer.files);
     }
   };
-
+    const descargarInforme = async (analisisId: number) => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const response = await fetch(`/api/analisis/${analisisId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        alert('No se pudo descargar el informe.');
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'informe_fluxira.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('No se pudo conectar con el servidor.');
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
@@ -293,12 +319,23 @@ export default function DetalleCliente() {
                   <p className="text-sm font-medium text-gray-900">
                     {new Date(item.fecha).toLocaleDateString('es-ES')}
                   </p>
+                  {item.ahorro_total !== null && (
+                    <p className="text-xs text-[#0087A5] font-medium">
+                      Ahorro: {item.ahorro_total.toLocaleString('es-ES', { minimumFractionDigits: 2 })} EUR
+                    </p>
+                  )}
                   {item.fecha_fin_contrato && (
                     <p className="text-xs text-amber-600">
                       Contrato vence: {new Date(item.fecha_fin_contrato).toLocaleDateString('es-ES')}
                     </p>
                   )}
                 </div>
+                <button
+                  onClick={() => descargarInforme(item.id)}
+                  className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap ml-4"
+                >
+                  Descargar
+                </button>
               </div>
             ))}
           </div>
