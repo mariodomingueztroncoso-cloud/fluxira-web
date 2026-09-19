@@ -140,7 +140,13 @@ export default function AppPanel() {
             >
               + Anadir cliente
             </button>
-            <button
+                      <Link
+              href="/app/marca"
+              className="text-sm text-gray-500 hover:text-[#0087A5] hover:underline"
+            >
+              Tu marca
+            </Link>
+          <button
               onClick={handleLogout}
               className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
             >
