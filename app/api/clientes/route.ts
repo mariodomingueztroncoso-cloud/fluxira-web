@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
-  console.log('>>> GET /api/clientes EJECUTANDO VERSION NUEVA <<<');
   try {
     const { FLUXIRA_API_URL } = process.env;
     if (!FLUXIRA_API_URL) {
