@@ -13,6 +13,8 @@ interface AnalisisItem {
   ruta_pdf: string;
 }
 
+const PERIODOS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
+
 export default function DetalleCliente() {
   const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -27,6 +29,44 @@ export default function DetalleCliente() {
   const clienteId = params.id as string;
   const [nombreCliente, setNombreCliente] = useState('');
 
+  // --- Comparativa de tarifa alternativa ---
+  const [preciosEnergia, setPreciosEnergia] = useState<string[]>(['', '', '', '', '', '']);
+  const [preciosPotencia, setPreciosPotencia] = useState<string[]>(['', '', '', '', '', '']);
+
+  useEffect(() => {
+    const guardadosEnergia = localStorage.getItem('fluxira_precios_energia');
+    const guardadosPotencia = localStorage.getItem('fluxira_precios_potencia');
+    if (guardadosEnergia) {
+      try { setPreciosEnergia(JSON.parse(guardadosEnergia)); } catch {}
+    }
+    if (guardadosPotencia) {
+      try { setPreciosPotencia(JSON.parse(guardadosPotencia)); } catch {}
+    }
+  }, []);
+
+  const actualizarPrecioEnergia = (index: number, valor: string) => {
+    const nuevos = [...preciosEnergia];
+    nuevos[index] = valor;
+    setPreciosEnergia(nuevos);
+    localStorage.setItem('fluxira_precios_energia', JSON.stringify(nuevos));
+  };
+
+  const actualizarPrecioPotencia = (index: number, valor: string) => {
+    const nuevos = [...preciosPotencia];
+    nuevos[index] = valor;
+    setPreciosPotencia(nuevos);
+    localStorage.setItem('fluxira_precios_potencia', JSON.stringify(nuevos));
+  };
+
+  const limpiarPreciosAlternativos = () => {
+    const vacios = ['', '', '', '', '', ''];
+    setPreciosEnergia(vacios);
+    setPreciosPotencia(vacios);
+    localStorage.removeItem('fluxira_precios_energia');
+    localStorage.removeItem('fluxira_precios_potencia');
+  };
+  // --- fin comparativa ---
+
   const cargarHistorial = async (token: string) => {
     setLoadingHistorial(true);
     try {
@@ -38,7 +78,6 @@ export default function DetalleCliente() {
         router.push('/login');
         return;
       }
-            // Obtener el nombre del cliente desde el listado
       const clientesResp = await fetch('/api/clientes', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -110,7 +149,8 @@ export default function DetalleCliente() {
       processFiles(e.dataTransfer.files);
     }
   };
-    const descargarInforme = async (analisisId: number) => {
+
+  const descargarInforme = async (analisisId: number) => {
     const token = localStorage.getItem('fluxira_token');
     if (!token) {
       router.push('/login');
@@ -137,6 +177,7 @@ export default function DetalleCliente() {
       alert('No se pudo conectar con el servidor.');
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
@@ -155,6 +196,16 @@ export default function DetalleCliente() {
       files.forEach((f) => formData.append('files', f));
       formData.append('cliente_id', clienteId);
       formData.append('nombre_empresa', nombreCliente || 'Cliente');
+
+      const energiaInformada = preciosEnergia.some((p) => p.trim() !== '');
+      if (energiaInformada) {
+        formData.append('precios_energia_alt', preciosEnergia.map((p) => p.trim()).join(','));
+      }
+
+      const potenciaInformada = preciosPotencia.some((p) => p.trim() !== '');
+      if (potenciaInformada) {
+        formData.append('precios_potencia_alt', preciosPotencia.map((p) => p.trim()).join(','));
+      }
 
       const response = await fetch('/api/analizar', {
         method: 'POST',
@@ -195,6 +246,9 @@ export default function DetalleCliente() {
 
   const inputClass =
     'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0087A5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0087A5]/20 transition-colors';
+
+  const inputPrecioClass =
+    'w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-900 text-center placeholder-gray-300 focus:border-[#0087A5] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0087A5]/30 transition-colors';
 
   if (checkingAuth) {
     return (
@@ -274,6 +328,68 @@ export default function DetalleCliente() {
               ))}
             </div>
           )}
+
+          {/* --- Comparativa de tarifa alternativa --- */}
+          <div className="border border-gray-100 rounded-2xl p-4 bg-gray-50/50">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                ¿Tienes una oferta de otra comercializadora?
+              </p>
+              <button
+                type="button"
+                onClick={limpiarPreciosAlternativos}
+                className="text-xs text-gray-400 hover:text-red-500 hover:underline"
+              >
+                Limpiar
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Rellena solo los periodos que conozcas de la oferta. Los que dejes vacíos se
+              compararán con el precio actual del cliente.
+            </p>
+
+            <div className="grid grid-cols-7 gap-2 items-center mb-1.5">
+              <span className="text-xs font-medium text-gray-400"></span>
+              {PERIODOS.map((p) => (
+                <span key={p} className="text-xs font-medium text-gray-500 text-center">
+                  {p}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 items-center mb-2">
+              <span className="text-xs text-gray-600">€/kWh</span>
+              {preciosEnergia.map((valor, i) => (
+                <input
+                  key={`e-${i}`}
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  value={valor}
+                  onChange={(ev) => actualizarPrecioEnergia(i, ev.target.value)}
+                  placeholder="—"
+                  className={inputPrecioClass}
+                />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 items-center">
+              <span className="text-xs text-gray-600">€/kW·día</span>
+              {preciosPotencia.map((valor, i) => (
+                <input
+                  key={`p-${i}`}
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  value={valor}
+                  onChange={(ev) => actualizarPrecioPotencia(i, ev.target.value)}
+                  placeholder="—"
+                  className={inputPrecioClass}
+                />
+              ))}
+            </div>
+          </div>
+          {/* --- fin comparativa --- */}
 
           {message && (
             <div
