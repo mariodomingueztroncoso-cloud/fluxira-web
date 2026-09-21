@@ -8,6 +8,7 @@ interface Cliente {
   id: number;
   nombre_cliente: string;
   cups: string | null;
+  email_cliente: string | null;
   fecha_alta: string;
   num_informes: number;
   fecha_ultimo_informe: string | null;
@@ -28,6 +29,7 @@ export default function AppPanel() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [nombreNuevo, setNombreNuevo] = useState('');
   const [cupsNuevo, setCupsNuevo] = useState('');
+  const [emailNuevo, setEmailNuevo] = useState('');
   const [creando, setCreando] = useState(false);
   const [errorCrear, setErrorCrear] = useState('');
   const router = useRouter();
@@ -91,6 +93,7 @@ export default function AppPanel() {
         body: JSON.stringify({
           nombre_cliente: nombreNuevo.trim(),
           cups: cupsNuevo.trim() || null,
+          email_cliente: emailNuevo.trim() || null,
         }),
       });
 
@@ -103,6 +106,7 @@ export default function AppPanel() {
 
       setNombreNuevo('');
       setCupsNuevo('');
+      setEmailNuevo('');
       setModalAbierto(false);
       await cargarClientes(token);
     } catch {
@@ -140,13 +144,13 @@ export default function AppPanel() {
             >
               + Anadir cliente
             </button>
-                      <Link
+            <Link
               href="/app/marca"
               className="text-sm text-gray-500 hover:text-[#0087A5] hover:underline"
             >
               Tu marca
             </Link>
-          <button
+            <button
               onClick={handleLogout}
               className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
             >
@@ -188,7 +192,10 @@ export default function AppPanel() {
                   </div>
 
                   {cliente.cups && (
-                    <p className="text-xs text-gray-400 mb-3 truncate">{cliente.cups}</p>
+                    <p className="text-xs text-gray-400 mb-1 truncate">{cliente.cups}</p>
+                  )}
+                  {cliente.email_cliente && (
+                    <p className="text-xs text-gray-400 mb-3 truncate">{cliente.email_cliente}</p>
                   )}
 
                   <div className="mt-auto space-y-1.5 pt-3 border-t border-gray-100">
@@ -245,6 +252,13 @@ export default function AppPanel() {
                 value={cupsNuevo}
                 onChange={(e) => setCupsNuevo(e.target.value)}
                 placeholder="CUPS (opcional)"
+                className={inputClass}
+              />
+              <input
+                type="email"
+                value={emailNuevo}
+                onChange={(e) => setEmailNuevo(e.target.value)}
+                placeholder="Email del cliente (opcional)"
                 className={inputClass}
               />
               {errorCrear && <p className="text-sm text-red-600">{errorCrear}</p>}

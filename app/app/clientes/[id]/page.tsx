@@ -29,6 +29,14 @@ export default function DetalleCliente() {
   const clienteId = params.id as string;
   const [nombreCliente, setNombreCliente] = useState('');
 
+  // --- Email del cliente ---
+  const [emailCliente, setEmailCliente] = useState<string | null>(null);
+  const [editandoEmail, setEditandoEmail] = useState(false);
+  const [emailBorrador, setEmailBorrador] = useState('');
+  const [guardandoEmail, setGuardandoEmail] = useState(false);
+  const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null);
+  const [avisoSinEmail, setAvisoSinEmail] = useState(false);
+
   // --- Comparativa de tarifa alternativa ---
   const [preciosEnergia, setPreciosEnergia] = useState<string[]>(['', '', '', '', '', '']);
   const [preciosPotencia, setPreciosPotencia] = useState<string[]>(['', '', '', '', '', '']);
@@ -84,7 +92,10 @@ export default function DetalleCliente() {
       if (clientesResp.ok) {
         const listaClientes = await clientesResp.json();
         const encontrado = listaClientes.find((c: any) => String(c.id) === clienteId);
-        if (encontrado) setNombreCliente(encontrado.nombre_cliente);
+        if (encontrado) {
+          setNombreCliente(encontrado.nombre_cliente);
+          setEmailCliente(encontrado.email_cliente || null);
+        }
       }
       if (response.status === 404) {
         setHistorial([]);
@@ -109,6 +120,65 @@ export default function DetalleCliente() {
     cargarHistorial(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, clienteId]);
+
+  const guardarEmail = async () => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    setGuardandoEmail(true);
+    try {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email_cliente: emailBorrador.trim() || null }),
+      });
+      if (response.ok) {
+        setEmailCliente(emailBorrador.trim() || null);
+        setEditandoEmail(false);
+        setAvisoSinEmail(false);
+      }
+    } catch {
+      // Si falla, el usuario puede reintentar.
+    } finally {
+      setGuardandoEmail(false);
+    }
+  };
+
+  const enviarPorEmail = async (analisisId: number) => {
+    if (!emailCliente) {
+      setAvisoSinEmail(true);
+      setEditandoEmail(true);
+      setEmailBorrador('');
+      return;
+    }
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    setEnviandoEmailId(analisisId);
+    try {
+      const response = await fetch(`/api/analisis/${analisisId}/enviar-email`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.detail || 'No se pudo enviar el email.');
+        return;
+      }
+      alert(data.mensaje || 'Informe enviado correctamente.');
+    } catch {
+      alert('No se pudo conectar con el servidor.');
+    } finally {
+      setEnviandoEmailId(null);
+    }
+  };
 
   const processFiles = (selectedFiles: FileList | File[]) => {
     const incoming = Array.from(selectedFiles);
@@ -267,12 +337,68 @@ export default function DetalleCliente() {
       </div>
 
       <div className="z-10 w-full max-w-2xl flex flex-col p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-100 mb-6">
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2 mb-4">
           <h1 className="text-2xl font-bold text-gray-950">{nombreCliente || 'Cliente'}</h1>
           <p className="text-sm text-gray-600">
             Sube la factura o facturas de este cliente y descarga el informe.
           </p>
         </div>
+
+        {/* --- Email del cliente --- */}
+        <div className="mb-6 p-3 bg-gray-50 rounded-xl border border-gray-100">
+          {editandoEmail ? (
+            <div>
+              {avisoSinEmail && (
+                <p className="text-xs text-amber-600 mb-2">
+                  Este cliente no tiene email configurado. Añádelo para poder enviarle informes.
+                </p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={emailBorrador}
+                  onChange={(e) => setEmailBorrador(e.target.value)}
+                  placeholder="email@cliente.com"
+                  className={inputClass}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={guardarEmail}
+                  disabled={guardandoEmail}
+                  className="rounded-xl bg-[#0087A5] px-4 py-2 text-sm font-semibold text-white hover:bg-[#006e88] disabled:bg-gray-300 whitespace-nowrap"
+                >
+                  {guardandoEmail ? '...' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditandoEmail(false); setAvisoSinEmail(false); }}
+                  className="text-sm text-gray-400 hover:text-gray-600 px-2"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                {emailCliente ? (
+                  <>Email: <span className="font-medium text-gray-900">{emailCliente}</span></>
+                ) : (
+                  <span className="text-gray-400">Sin email configurado</span>
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() => { setEmailBorrador(emailCliente || ''); setEditandoEmail(true); }}
+                className="text-xs text-[#0087A5] hover:underline"
+              >
+                {emailCliente ? 'Editar' : 'Añadir email'}
+              </button>
+            </div>
+          )}
+        </div>
+        {/* --- fin email --- */}
 
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div>
@@ -446,12 +572,21 @@ export default function DetalleCliente() {
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={() => descargarInforme(item.id)}
-                  className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap ml-4"
-                >
-                  Descargar
-                </button>
+                <div className="flex items-center gap-3 shrink-0 ml-4">
+                  <button
+                    onClick={() => enviarPorEmail(item.id)}
+                    disabled={enviandoEmailId === item.id}
+                    className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap disabled:opacity-50"
+                  >
+                    {enviandoEmailId === item.id ? 'Enviando...' : 'Enviar por email'}
+                  </button>
+                  <button
+                    onClick={() => descargarInforme(item.id)}
+                    className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap"
+                  >
+                    Descargar
+                  </button>
+                </div>
               </div>
             ))}
           </div>
