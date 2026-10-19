@@ -46,6 +46,15 @@ export default function DetalleCliente() {
   const [precios2tdEnergia, setPrecios2tdEnergia] = useState<string[]>(['', '', '']);
 
   useEffect(() => {
+    const ts = localStorage.getItem('fluxira_oferta_ts');
+    if (ts && Date.now() - parseInt(ts, 10) > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('fluxira_precios_energia');
+      localStorage.removeItem('fluxira_precios_potencia');
+      localStorage.removeItem('fluxira_2td_potencia');
+      localStorage.removeItem('fluxira_2td_energia');
+      localStorage.removeItem('fluxira_oferta_ts');
+      return;
+    }
     const guardadosEnergia = localStorage.getItem('fluxira_precios_energia');
     const guardadosPotencia = localStorage.getItem('fluxira_precios_potencia');
     if (guardadosEnergia) {
@@ -65,6 +74,7 @@ export default function DetalleCliente() {
     nuevos[index] = valor;
     setPreciosEnergia(nuevos);
     localStorage.setItem('fluxira_precios_energia', JSON.stringify(nuevos));
+    localStorage.setItem('fluxira_oferta_ts', Date.now().toString());
   };
 
   const actualizarPrecioPotencia = (index: number, valor: string) => {
@@ -72,6 +82,7 @@ export default function DetalleCliente() {
     nuevos[index] = valor;
     setPreciosPotencia(nuevos);
     localStorage.setItem('fluxira_precios_potencia', JSON.stringify(nuevos));
+    localStorage.setItem('fluxira_oferta_ts', Date.now().toString());
   };
 
   const limpiarPreciosAlternativos = () => {
@@ -88,6 +99,7 @@ export default function DetalleCliente() {
     nuevos[index] = valor;
     setPrecios2tdPotencia(nuevos);
     localStorage.setItem('fluxira_2td_potencia', JSON.stringify(nuevos));
+    localStorage.setItem('fluxira_oferta_ts', Date.now().toString());
   };
 
   const actualizar2tdEnergia = (index: number, valor: string) => {
@@ -95,6 +107,7 @@ export default function DetalleCliente() {
     nuevos[index] = valor;
     setPrecios2tdEnergia(nuevos);
     localStorage.setItem('fluxira_2td_energia', JSON.stringify(nuevos));
+    localStorage.setItem('fluxira_oferta_ts', Date.now().toString());
   };
 
   const limpiar2td = () => {
@@ -640,6 +653,35 @@ export default function DetalleCliente() {
               {message}
             </div>
           )}
+
+          {(() => {
+            const hayOferta3td =
+              preciosEnergia.some((p) => p.trim() !== '') ||
+              preciosPotencia.some((p) => p.trim() !== '');
+            const simulacion2tdCompleta =
+              [...precios2tdPotencia, ...precios2tdEnergia].filter((p) => p.trim() !== '').length === 5;
+            if (!hayOferta3td && !simulacion2tdCompleta) return null;
+            const partes: string[] = [];
+            if (hayOferta3td) partes.push('comparativa con oferta 3.0TD');
+            if (simulacion2tdCompleta) partes.push('simulación 2.0TD');
+            return (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-[#0087A5]/30 bg-[#0087A5]/8 px-4 py-3">
+                <p className="text-sm text-[#0087A5] font-medium">
+                  Se incluirá en el informe: {partes.join(' y ')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (hayOferta3td) limpiarPreciosAlternativos();
+                    if (simulacion2tdCompleta) limpiar2td();
+                  }}
+                  className="shrink-0 text-xs font-semibold text-[#0087A5] border border-[#0087A5]/40 rounded-lg px-3 py-1.5 hover:bg-[#0087A5]/10 transition-colors"
+                >
+                  Quitar
+                </button>
+              </div>
+            );
+          })()}
 
           <button
             type="submit"
