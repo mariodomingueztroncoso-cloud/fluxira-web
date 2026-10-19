@@ -41,6 +41,10 @@ export default function DetalleCliente() {
   const [preciosEnergia, setPreciosEnergia] = useState<string[]>(['', '', '', '', '', '']);
   const [preciosPotencia, setPreciosPotencia] = useState<string[]>(['', '', '', '', '', '']);
 
+  // --- Simulación 2.0TD ---
+  const [precios2tdPotencia, setPrecios2tdPotencia] = useState<string[]>(['', '']);
+  const [precios2tdEnergia, setPrecios2tdEnergia] = useState<string[]>(['', '', '']);
+
   useEffect(() => {
     const guardadosEnergia = localStorage.getItem('fluxira_precios_energia');
     const guardadosPotencia = localStorage.getItem('fluxira_precios_potencia');
@@ -50,6 +54,10 @@ export default function DetalleCliente() {
     if (guardadosPotencia) {
       try { setPreciosPotencia(JSON.parse(guardadosPotencia)); } catch {}
     }
+    const guardados2tdPot = localStorage.getItem('fluxira_2td_potencia');
+    const guardados2tdEn = localStorage.getItem('fluxira_2td_energia');
+    if (guardados2tdPot) { try { setPrecios2tdPotencia(JSON.parse(guardados2tdPot)); } catch {} }
+    if (guardados2tdEn) { try { setPrecios2tdEnergia(JSON.parse(guardados2tdEn)); } catch {} }
   }, []);
 
   const actualizarPrecioEnergia = (index: number, valor: string) => {
@@ -74,6 +82,28 @@ export default function DetalleCliente() {
     localStorage.removeItem('fluxira_precios_potencia');
   };
   // --- fin comparativa ---
+
+  const actualizar2tdPotencia = (index: number, valor: string) => {
+    const nuevos = [...precios2tdPotencia];
+    nuevos[index] = valor;
+    setPrecios2tdPotencia(nuevos);
+    localStorage.setItem('fluxira_2td_potencia', JSON.stringify(nuevos));
+  };
+
+  const actualizar2tdEnergia = (index: number, valor: string) => {
+    const nuevos = [...precios2tdEnergia];
+    nuevos[index] = valor;
+    setPrecios2tdEnergia(nuevos);
+    localStorage.setItem('fluxira_2td_energia', JSON.stringify(nuevos));
+  };
+
+  const limpiar2td = () => {
+    setPrecios2tdPotencia(['', '']);
+    setPrecios2tdEnergia(['', '', '']);
+    localStorage.removeItem('fluxira_2td_potencia');
+    localStorage.removeItem('fluxira_2td_energia');
+  };
+  // --- fin 2.0TD ---
 
   const cargarHistorial = async (token: string) => {
     setLoadingHistorial(true);
@@ -277,6 +307,17 @@ export default function DetalleCliente() {
         formData.append('precios_potencia_alt', preciosPotencia.map((p) => p.trim()).join(','));
       }
 
+      const rellenos2td = [...precios2tdPotencia, ...precios2tdEnergia].filter((p) => p.trim() !== '');
+      if (rellenos2td.length > 0 && rellenos2td.length < 5) {
+        setStatus('error');
+        setMessage('Debes rellenar los 5 precios de la oferta 2.0TD o dejar todos vacíos.');
+        return;
+      }
+      if (rellenos2td.length === 5) {
+        formData.append('precios_potencia_2td', precios2tdPotencia.map((p) => p.trim()).join(','));
+        formData.append('precios_energia_2td', precios2tdEnergia.map((p) => p.trim()).join(','));
+      }
+
       const response = await fetch('/api/analizar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -290,7 +331,14 @@ export default function DetalleCliente() {
       }
 
       if (!response.ok) {
-        throw new Error('Error al procesar el archivo');
+        let detail: string | null = null;
+        try {
+          const errBody = await response.json();
+          if (typeof errBody?.detail === 'string') detail = errBody.detail;
+        } catch { /* no-op */ }
+        setStatus('error');
+        setMessage(detail ?? 'Hubo un problema al analizar la factura. Intentalo de nuevo.');
+        return;
       }
 
       const blob = await response.blob();
@@ -516,6 +564,68 @@ export default function DetalleCliente() {
             </div>
           </div>
           {/* --- fin comparativa --- */}
+
+          {/* --- Simulación 2.0TD --- */}
+          <details className="border border-gray-100 rounded-2xl bg-gray-50/50">
+            <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide list-none flex items-center justify-between select-none">
+              <span>
+                ¿Quieres simular el paso a 2.0TD?{' '}
+                <span className="normal-case font-normal text-gray-400">(opcional)</span>
+              </span>
+              <span className="text-gray-400 text-base">›</span>
+            </summary>
+            <div className="px-4 pb-4">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-xs text-gray-500">
+                  Introduce los 5 precios de la oferta 2.0TD. Si dejas alguno vacío, no se calcula el escenario.
+                </p>
+                <button
+                  type="button"
+                  onClick={limpiar2td}
+                  className="text-xs text-gray-400 hover:text-red-500 hover:underline ml-3 shrink-0"
+                >
+                  Limpiar
+                </button>
+              </div>
+
+              <p className="text-xs font-medium text-gray-500 mb-1.5">Potencia (€/kW·día)</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {(['P1 (punta+llano)', 'P2 (valle)'] as const).map((label, i) => (
+                  <div key={i}>
+                    <span className="text-xs text-gray-400 block mb-0.5">{label}</span>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      value={precios2tdPotencia[i]}
+                      onChange={(ev) => actualizar2tdPotencia(i, ev.target.value)}
+                      placeholder="—"
+                      className={inputPrecioClass}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs font-medium text-gray-500 mb-1.5">Energía (€/kWh)</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['Punta', 'Llano', 'Valle'] as const).map((label, i) => (
+                  <div key={i}>
+                    <span className="text-xs text-gray-400 block mb-0.5">{label}</span>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      value={precios2tdEnergia[i]}
+                      onChange={(ev) => actualizar2tdEnergia(i, ev.target.value)}
+                      placeholder="—"
+                      className={inputPrecioClass}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+          {/* --- fin 2.0TD --- */}
 
           {message && (
             <div
