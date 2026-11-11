@@ -350,7 +350,7 @@ export default function DetalleCliente() {
           if (typeof errBody?.detail === 'string') detail = errBody.detail;
         } catch { /* no-op */ }
         setStatus('error');
-        setMessage(detail ?? 'Hubo un problema al analizar la factura. Intentalo de nuevo.');
+        setMessage(detail ?? 'Hubo un problema al analizar la factura. Inténtalo de nuevo.');
         return;
       }
 
@@ -371,7 +371,7 @@ export default function DetalleCliente() {
       await cargarHistorial(token);
     } catch {
       setStatus('error');
-      setMessage('Hubo un problema al analizar la factura. Intentalo de nuevo.');
+      setMessage('Hubo un problema al analizar la factura. Inténtalo de nuevo.');
     }
   };
 
@@ -700,7 +700,7 @@ export default function DetalleCliente() {
           <p className="text-sm text-gray-400">Cargando historial...</p>
         ) : historial.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">
-            Aun no hay informes para este cliente.
+            Aún no hay informes para este cliente.
           </p>
         ) : (
           <div className="space-y-2">

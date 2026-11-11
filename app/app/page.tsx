@@ -142,7 +142,7 @@ export default function AppPanel() {
               onClick={() => setModalAbierto(true)}
               className="rounded-full bg-[#0087A5] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#006e88] shadow-sm"
             >
-              + Anadir cliente
+              + Añadir cliente
             </button>
             <Link
               href="/app/marca"
@@ -154,7 +154,7 @@ export default function AppPanel() {
               onClick={handleLogout}
               className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -163,12 +163,12 @@ export default function AppPanel() {
           <p className="text-sm text-gray-400">Cargando clientes...</p>
         ) : clientes.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-400 mb-4">Aun no tienes clientes.</p>
+            <p className="text-gray-400 mb-4">Aún no tienes clientes.</p>
             <button
               onClick={() => setModalAbierto(true)}
               className="rounded-full bg-[#0087A5] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#006e88]"
             >
-              Anadir tu primer cliente
+              Añadir tu primer cliente
             </button>
           </div>
         ) : (
@@ -204,7 +204,7 @@ export default function AppPanel() {
                     </p>
                     {cliente.fecha_ultimo_informe && (
                       <p className="text-xs text-gray-400">
-                        Ultimo: {new Date(cliente.fecha_ultimo_informe).toLocaleDateString('es-ES')}
+                        Último: {new Date(cliente.fecha_ultimo_informe).toLocaleDateString('es-ES')}
                       </p>
                     )}
                     {diasContrato !== null && (
@@ -214,7 +214,7 @@ export default function AppPanel() {
                         }`}
                       >
                         {diasContrato > 0
-                          ? `Contrato vence en ${diasContrato} dias`
+                          ? `Contrato vence en ${diasContrato} días`
                           : 'Contrato vencido'}
                       </p>
                     )}
@@ -236,7 +236,7 @@ export default function AppPanel() {
             className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-950 mb-4">Anadir cliente</h2>
+            <h2 className="text-lg font-bold text-gray-950 mb-4">Añadir cliente</h2>
             <form onSubmit={handleCrearCliente} className="space-y-3">
               <input
                 type="text"
@@ -275,7 +275,7 @@ export default function AppPanel() {
                   disabled={creando || nombreNuevo.trim() === ''}
                   className="flex-1 rounded-full bg-[#0087A5] py-2.5 text-sm font-semibold text-white hover:bg-[#006e88] disabled:bg-gray-300"
                 >
-                  {creando ? 'Anadiendo...' : 'Anadir'}
+                  {creando ? 'Añadiendo...' : 'Añadir'}
                 </button>
               </div>
             </form>

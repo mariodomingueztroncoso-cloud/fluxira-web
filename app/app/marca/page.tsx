@@ -57,7 +57,7 @@ export default function MiMarca() {
     if (!file) return;
 
     if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
-      setMensaje('Solo se permiten imagenes PNG o JPEG.');
+      setMensaje('Solo se permiten imágenes PNG o JPEG.');
       setTipoMensaje('error');
       return;
     }
@@ -151,7 +151,7 @@ export default function MiMarca() {
                 type="text"
                 value={nombreComercial}
                 onChange={(e) => setNombreComercial(e.target.value)}
-                placeholder="Ej. Talleres Garcia Energia"
+                placeholder="Ej. Talleres García Energía"
                 className={inputClass}
               />
             </div>
@@ -184,7 +184,7 @@ export default function MiMarca() {
                   onChange={handleLogoChange}
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-1">PNG o JPEG, maximo 2MB.</p>
+              <p className="text-xs text-gray-400 mt-1">PNG o JPEG, máximo 2 MB.</p>
             </div>
 
             {mensaje && (
