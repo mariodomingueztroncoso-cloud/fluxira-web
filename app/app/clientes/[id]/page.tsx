@@ -11,9 +11,27 @@ interface AnalisisItem {
   ahorro_total: number | null;
   fecha_fin_contrato: string | null;
   ruta_pdf: string;
+  etiqueta: string | null;
+  num_facturas: number | null;
+  periodo: string | null;
 }
 
 const PERIODOS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
+
+function formatFechaCorta(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function insigniaFechaFin(dias: number | null, fecha: string | null, origen: string | null) {
+  const manual = origen === 'manual' ? ' (manual)' : '';
+  if (dias === null || fecha === null) return { clase: 'bg-gray-100 text-gray-500 border-gray-200', texto: 'Sin fecha de fin' };
+  const f = formatFechaCorta(fecha);
+  if (dias > 90)  return { clase: 'bg-green-50 text-green-700 border-green-100', texto: `Vence el ${f} · ${dias} días${manual}` };
+  if (dias >= 30) return { clase: 'bg-amber-50 text-amber-700 border-amber-100', texto: `Vence el ${f} · ${dias} días${manual}` };
+  if (dias >= 0)  return { clase: 'bg-red-50 text-red-700 border-red-100',   texto: dias === 0 ? `Vence hoy${manual}` : `Vence el ${f} · ${dias} días${manual}` };
+  return { clase: 'bg-red-50 text-red-700 border-red-100', texto: `Vencido hace ${-dias} día${-dias !== 1 ? 's' : ''}${manual}` };
+}
 
 export default function DetalleCliente() {
   const [files, setFiles] = useState<File[]>([]);
@@ -36,6 +54,22 @@ export default function DetalleCliente() {
   const [guardandoEmail, setGuardandoEmail] = useState(false);
   const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null);
   const [avisoSinEmail, setAvisoSinEmail] = useState(false);
+
+  // --- Fecha fin de contrato ---
+  const [fechaFinContrato, setFechaFinContrato] = useState<string | null>(null);
+  const [fechaFinOrigen, setFechaFinOrigen] = useState<string | null>(null);
+  const [diasRestantes, setDiasRestantes] = useState<number | null>(null);
+  const [fechaFinSugerida, setFechaFinSugerida] = useState<string | null>(null);
+  const [editandoFechaFin, setEditandoFechaFin] = useState(false);
+  const [fechaFinBorrador, setFechaFinBorrador] = useState('');
+  const [guardandoFechaFin, setGuardandoFechaFin] = useState(false);
+  const [aceptandoSugerida, setAceptandoSugerida] = useState(false);
+
+  // --- Etiquetas de análisis ---
+  const [editandoEtiquetaId, setEditandoEtiquetaId] = useState<number | null>(null);
+  const [etiquetaBorrador, setEtiquetaBorrador] = useState('');
+  const [guardandoEtiqueta, setGuardandoEtiqueta] = useState(false);
+  const [etiquetaNueva, setEtiquetaNueva] = useState('');
 
   // --- Comparativa de tarifa alternativa ---
   const [preciosEnergia, setPreciosEnergia] = useState<string[]>(['', '', '', '', '', '']);
@@ -138,6 +172,10 @@ export default function DetalleCliente() {
         if (encontrado) {
           setNombreCliente(encontrado.nombre_cliente);
           setEmailCliente(encontrado.email_cliente || null);
+          setFechaFinContrato(encontrado.fecha_fin_contrato || null);
+          setFechaFinOrigen(encontrado.fecha_fin_origen || null);
+          setDiasRestantes(encontrado.dias_restantes ?? null);
+          setFechaFinSugerida(encontrado.fecha_fin_sugerida || null);
         }
       }
       if (response.status === 404) {
@@ -190,6 +228,79 @@ export default function DetalleCliente() {
     } finally {
       setGuardandoEmail(false);
     }
+  };
+
+  const guardarFechaFin = async () => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token || !fechaFinBorrador) return;
+    setGuardandoFechaFin(true);
+    try {
+      const [y, m, d] = fechaFinBorrador.split('-');
+      const ddmmaaaa = `${d}/${m}/${y}`;
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fecha_fin_contrato: ddmmaaaa }),
+      });
+      if (response.ok) {
+        setEditandoFechaFin(false);
+        await cargarHistorial(token);
+      }
+    } catch {}
+    finally { setGuardandoFechaFin(false); }
+  };
+
+  const quitarFechaFin = async () => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fecha_fin_contrato: '' }),
+      });
+      if (response.ok) {
+        setEditandoFechaFin(false);
+        await cargarHistorial(token);
+      }
+    } catch {}
+  };
+
+  const aceptarSugerida = async () => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) return;
+    setAceptandoSugerida(true);
+    try {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ aceptar_sugerida: true }),
+      });
+      if (response.ok) {
+        await cargarHistorial(token);
+      }
+    } catch {}
+    finally { setAceptandoSugerida(false); }
+  };
+
+  const guardarEtiqueta = async (analisisId: number) => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) return;
+    setGuardandoEtiqueta(true);
+    try {
+      const response = await fetch(`/api/analisis/${analisisId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ etiqueta: etiquetaBorrador.trim() || null }),
+      });
+      if (response.ok) {
+        setEditandoEtiquetaId(null);
+        setHistorial(prev => prev.map(h =>
+          h.id === analisisId ? { ...h, etiqueta: etiquetaBorrador.trim() || null } : h
+        ));
+      }
+    } catch {}
+    finally { setGuardandoEtiqueta(false); }
   };
 
   const enviarPorEmail = async (analisisId: number) => {
@@ -331,6 +442,8 @@ export default function DetalleCliente() {
         formData.append('precios_energia_2td', precios2tdEnergia.map((p) => p.trim()).join(','));
       }
 
+      if (etiquetaNueva.trim()) formData.append('etiqueta', etiquetaNueva.trim().slice(0, 80));
+
       const response = await fetch('/api/analizar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -367,6 +480,7 @@ export default function DetalleCliente() {
       setStatus('success');
       setMessage('Informe generado. Descargando...');
       setFiles([]);
+      setEtiquetaNueva('');
       if (fileInputRef.current) fileInputRef.current.value = '';
       await cargarHistorial(token);
     } catch {
@@ -403,6 +517,94 @@ export default function DetalleCliente() {
           <p className="text-sm text-gray-600">
             Sube la factura o facturas de este cliente y descarga el informe.
           </p>
+
+          {/* --- Insignia de fecha fin de contrato --- */}
+          <div className="mt-3">
+            {editandoFechaFin ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  value={fechaFinBorrador}
+                  onChange={(e) => setFechaFinBorrador(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 focus:border-[#0087A5] focus:outline-none focus:ring-1 focus:ring-[#0087A5]/30"
+                />
+                <button
+                  onClick={guardarFechaFin}
+                  disabled={guardandoFechaFin || !fechaFinBorrador}
+                  className="rounded-lg bg-[#0087A5] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#006e88] disabled:bg-gray-300"
+                >
+                  {guardandoFechaFin ? '...' : 'Guardar'}
+                </button>
+                {fechaFinContrato && (
+                  <button
+                    onClick={quitarFechaFin}
+                    className="text-sm text-red-500 hover:underline"
+                  >
+                    Quitar fecha
+                  </button>
+                )}
+                <button onClick={() => setEditandoFechaFin(false)} className="text-sm text-gray-400 hover:text-gray-600">
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {fechaFinContrato ? (
+                    <>
+                      {(() => {
+                        const ins = insigniaFechaFin(diasRestantes, fechaFinContrato, fechaFinOrigen);
+                        return (
+                          <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${ins.clase}`}>
+                            {ins.texto}
+                          </span>
+                        );
+                      })()}
+                      <button
+                        onClick={() => { setFechaFinBorrador(fechaFinContrato); setEditandoFechaFin(true); }}
+                        className="inline-flex items-center gap-1 min-h-[36px] px-2 text-sm text-[#0087A5] hover:text-[#006e88] transition-colors"
+                      >
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        Editar fecha
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => { setFechaFinBorrador(''); setEditandoFechaFin(true); }}
+                      className="inline-flex items-center gap-1 min-h-[36px] px-3 text-sm text-[#0087A5] border border-dashed border-[#0087A5]/40 rounded-full hover:bg-[#0087A5]/5 transition-colors"
+                    >
+                      + Añadir fecha de fin de contrato
+                    </button>
+                  )}
+                </div>
+                {fechaFinSugerida && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p className="text-xs text-amber-700">
+                      Las facturas indican {formatFechaCorta(fechaFinSugerida)}. ¿Actualizar?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={aceptarSugerida}
+                        disabled={aceptandoSugerida}
+                        className="text-xs font-semibold text-amber-700 hover:text-amber-900 disabled:opacity-50"
+                      >
+                        {aceptandoSugerida ? '...' : 'Actualizar'}
+                      </button>
+                      <button
+                        onClick={() => setFechaFinSugerida(null)}
+                        className="text-xs text-amber-500 hover:text-amber-700"
+                      >
+                        Mantener la mía
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* --- fin insignia --- */}
         </div>
 
         {/* --- Email del cliente --- */}
@@ -640,6 +842,19 @@ export default function DetalleCliente() {
           </details>
           {/* --- fin 2.0TD --- */}
 
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+              Etiqueta <span className="normal-case font-normal text-gray-400">(opcional, máx. 80 caracteres)</span>
+            </label>
+            <input
+              type="text"
+              value={etiquetaNueva}
+              onChange={(e) => setEtiquetaNueva(e.target.value.slice(0, 80))}
+              placeholder="Ej. Enero–Junio 2026"
+              className={inputClass}
+            />
+          </div>
+
           {message && (
             <div
               className={`p-4 rounded-xl text-sm font-medium ${
@@ -703,44 +918,113 @@ export default function DetalleCliente() {
             Aún no hay informes para este cliente.
           </p>
         ) : (
-          <div className="space-y-2">
-            {historial.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-4"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {new Date(item.fecha).toLocaleDateString('es-ES')}
-                  </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {historial.map((item) => {
+              const fechaGen = new Date(item.fecha).toLocaleDateString('es-ES');
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex flex-col gap-2"
+                >
+                  {/* Título editable */}
+                  {editandoEtiquetaId === item.id ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength={80}
+                        value={etiquetaBorrador}
+                        onChange={(e) => setEtiquetaBorrador(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') guardarEtiqueta(item.id);
+                          if (e.key === 'Escape') setEditandoEtiquetaId(null);
+                        }}
+                        className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-[#0087A5] focus:outline-none focus:ring-1 focus:ring-[#0087A5]/30"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => guardarEtiqueta(item.id)}
+                        disabled={guardandoEtiqueta}
+                        className="rounded-lg bg-[#0087A5] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#006e88] disabled:bg-gray-300 whitespace-nowrap"
+                      >
+                        {guardandoEtiqueta ? '...' : 'Guardar'}
+                      </button>
+                      <button
+                        onClick={() => setEditandoEtiquetaId(null)}
+                        className="text-xs text-gray-400 hover:text-gray-600 px-1"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xl font-bold text-gray-900 leading-snug">
+                          {item.etiqueta || (item.periodo ? `Informe de ${item.periodo}` : new Date(item.fecha).toLocaleDateString('es-ES'))}
+                        </p>
+                        {(item.num_facturas || item.periodo) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {[
+                              item.num_facturas ? `${item.num_facturas} factura${item.num_facturas !== 1 ? 's' : ''}` : null,
+                              item.periodo || null,
+                            ].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      {item.etiqueta ? (
+                        <button
+                          onClick={() => { setEditandoEtiquetaId(item.id); setEtiquetaBorrador(item.etiqueta || ''); }}
+                          className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-2 text-sm text-[#0087A5] hover:text-[#006e88] transition-colors"
+                          title="Editar etiqueta"
+                        >
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                          Editar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setEditandoEtiquetaId(item.id); setEtiquetaBorrador(''); }}
+                          className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-2.5 text-sm text-[#0087A5] border border-dashed border-[#0087A5]/40 rounded-full hover:bg-[#0087A5]/5 transition-colors whitespace-nowrap"
+                        >
+                          + Añadir etiqueta
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fecha de generación */}
+                  <p className="text-xs text-gray-400">{fechaGen}</p>
+
+                  {/* Ahorro en recuadro */}
                   {item.ahorro_total !== null && (
-                    <p className="text-xs text-[#0087A5] font-medium">
-                      Ahorro: {item.ahorro_total.toLocaleString('es-ES', { minimumFractionDigits: 2 })} EUR
-                    </p>
+                    <div className="bg-[#0087A5]/5 rounded-xl px-3 py-2.5 mt-1">
+                      <p className="text-xs text-gray-500 mb-0.5">Ahorro estimado</p>
+                      <p className="text-lg font-semibold text-[#0087A5]">
+                        {item.ahorro_total.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €/año
+                      </p>
+                    </div>
                   )}
-                  {item.fecha_fin_contrato && (
-                    <p className="text-xs text-amber-600">
-                      Contrato vence: {new Date(item.fecha_fin_contrato).toLocaleDateString('es-ES')}
-                    </p>
-                  )}
+
+                  {/* Botones */}
+                  <div className="flex items-center gap-4 pt-2 mt-auto border-t border-gray-200">
+                    <button
+                      onClick={() => enviarPorEmail(item.id)}
+                      disabled={enviandoEmailId === item.id}
+                      className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap disabled:opacity-50"
+                    >
+                      {enviandoEmailId === item.id ? 'Enviando...' : 'Enviar por email'}
+                    </button>
+                    <button
+                      onClick={() => descargarInforme(item.id)}
+                      className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap"
+                    >
+                      Descargar
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <button
-                    onClick={() => enviarPorEmail(item.id)}
-                    disabled={enviandoEmailId === item.id}
-                    className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap disabled:opacity-50"
-                  >
-                    {enviandoEmailId === item.id ? 'Enviando...' : 'Enviar por email'}
-                  </button>
-                  <button
-                    onClick={() => descargarInforme(item.id)}
-                    className="text-sm text-[#0087A5] font-medium hover:underline whitespace-nowrap"
-                  >
-                    Descargar
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -13,13 +13,24 @@ interface Cliente {
   num_informes: number;
   fecha_ultimo_informe: string | null;
   fecha_fin_contrato_proxima: string | null;
+  fecha_fin_contrato: string | null;
+  fecha_fin_origen: string | null;
+  dias_restantes: number | null;
 }
 
-function diasHasta(fechaIso: string): number {
-  const hoy = new Date();
-  const fecha = new Date(fechaIso);
-  const diff = fecha.getTime() - hoy.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+function formatFechaCorta(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function insigniaFechaFin(dias: number | null, fecha: string | null, origen: string | null) {
+  const manual = origen === 'manual' ? ' (manual)' : '';
+  if (dias === null || fecha === null) return { clase: 'bg-gray-100 text-gray-500 border-gray-200', texto: 'Sin fecha de fin' };
+  const f = formatFechaCorta(fecha);
+  if (dias > 90)  return { clase: 'bg-green-50 text-green-700 border-green-100', texto: `Vence el ${f} · ${dias} días${manual}` };
+  if (dias >= 30) return { clase: 'bg-amber-50 text-amber-700 border-amber-100', texto: `Vence el ${f} · ${dias} días${manual}` };
+  if (dias >= 0)  return { clase: 'bg-red-50 text-red-700 border-red-100',   texto: dias === 0 ? `Vence hoy${manual}` : `Vence el ${f} · ${dias} días${manual}` };
+  return { clase: 'bg-red-50 text-red-700 border-red-100', texto: `Vencido hace ${-dias} día${-dias !== 1 ? 's' : ''}${manual}` };
 }
 
 export default function AppPanel() {
@@ -173,12 +184,14 @@ export default function AppPanel() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {clientes.map((cliente) => {
-              const diasContrato = cliente.fecha_fin_contrato_proxima
-                ? diasHasta(cliente.fecha_fin_contrato_proxima)
-                : null;
-              const contratoUrgente = diasContrato !== null && diasContrato <= 60;
-
+            {[...clientes].sort((a, b) => {
+              const da = a.dias_restantes;
+              const db = b.dias_restantes;
+              if (da === null && db === null) return 0;
+              if (da === null) return 1;
+              if (db === null) return -1;
+              return da - db;
+            }).map((cliente) => {
               return (
                 <Link
                   key={cliente.id}
@@ -207,17 +220,14 @@ export default function AppPanel() {
                         Último: {new Date(cliente.fecha_ultimo_informe).toLocaleDateString('es-ES')}
                       </p>
                     )}
-                    {diasContrato !== null && (
-                      <p
-                        className={`text-xs font-medium ${
-                          contratoUrgente ? 'text-amber-600' : 'text-gray-400'
-                        }`}
-                      >
-                        {diasContrato > 0
-                          ? `Contrato vence en ${diasContrato} días`
-                          : 'Contrato vencido'}
-                      </p>
-                    )}
+                    {(() => {
+                      const ins = insigniaFechaFin(cliente.dias_restantes, cliente.fecha_fin_contrato, cliente.fecha_fin_origen);
+                      return (
+                        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${ins.clase}`}>
+                          {ins.texto}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </Link>
               );
