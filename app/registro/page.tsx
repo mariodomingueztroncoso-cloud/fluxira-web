@@ -8,6 +8,7 @@ export default function Registro() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombreGestoria, setNombreGestoria] = useState('');
+  const [codigoInvitacion, setCodigoInvitacion] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function Registro() {
           email,
           password,
           nombre_gestoria: nombreGestoria || null,
+          codigo_invitacion: codigoInvitacion,
         }),
       });
 
@@ -96,6 +98,19 @@ export default function Registro() {
               value={nombreGestoria}
               onChange={(e) => setNombreGestoria(e.target.value)}
               className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+              Código de invitación
+            </label>
+            <input
+              type="text"
+              value={codigoInvitacion}
+              onChange={(e) => setCodigoInvitacion(e.target.value)}
+              className={inputClass}
+              required
             />
           </div>
 
