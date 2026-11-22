@@ -3,12 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { VERSION_POLITICA } from '@/lib/politica';
+import { VERSION_ENCARGO } from '@/lib/encargo';
 
 export default function Registro() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombreGestoria, setNombreGestoria] = useState('');
   const [codigoInvitacion, setCodigoInvitacion] = useState('');
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
+  const [aceptaEncargo, setAceptaEncargo] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -27,6 +31,10 @@ export default function Registro() {
           password,
           nombre_gestoria: nombreGestoria || null,
           codigo_invitacion: codigoInvitacion,
+          acepta_politica: true,
+          politica_version: VERSION_POLITICA,
+          acepta_encargo: true,
+          encargo_version: VERSION_ENCARGO,
         }),
       });
 
@@ -114,6 +122,16 @@ export default function Registro() {
             />
           </div>
 
+          <label className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={aceptaPolitica} onChange={e => setAceptaPolitica(e.target.checked)} className="mt-0.5 accent-[#0087A5]" />
+            <span>He leído y acepto la <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-[#0087A5] hover:underline">Política de Privacidad</a></span>
+          </label>
+
+          <label className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={aceptaEncargo} onChange={e => setAceptaEncargo(e.target.checked)} className="mt-0.5 accent-[#0087A5]" />
+            <span>Acepto las <a href="/encargo" target="_blank" rel="noopener noreferrer" className="text-[#0087A5] hover:underline">Condiciones del encargo de tratamiento</a></span>
+          </label>
+
           {message && (
             <div className="p-3 rounded-xl text-sm font-medium bg-red-50 text-red-700 border border-red-100">
               {message}
@@ -122,7 +140,7 @@ export default function Registro() {
 
           <button
             type="submit"
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || !aceptaPolitica || !aceptaEncargo}
             className="w-full rounded-full bg-[#0087A5] py-3.5 text-base font-semibold text-white transition-all hover:bg-[#006e88] shadow-md hover:shadow-lg disabled:bg-gray-300"
           >
             {status === 'loading' ? 'Creando cuenta...' : 'Crear cuenta gratis'}

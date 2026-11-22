@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { VERSION_POLITICA } from '@/lib/politica';
 
 export const metadata = {
   title: 'Política de Privacidad | Fluxira',
@@ -18,75 +19,88 @@ export default function Privacidad() {
         {/* Título */}
         <div className="w-full mb-8 text-center">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-950">Política de Privacidad</h1>
-          <p className="text-sm text-gray-400 mt-2">Última actualización: 18/07/2026</p>
+          <p className="text-sm text-gray-400 mt-2">Última actualización: {VERSION_POLITICA.split('-').reverse().join('/')}</p>
         </div>
 
         {/* Contenido */}
         <div className="w-full prose-sm text-gray-700 leading-relaxed space-y-8">
 
           <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">1. Responsable del tratamiento</h2>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">1. Dos contextos del servicio</h2>
+            <p className="text-sm">Fluxira opera en dos contextos diferenciados: (a) un formulario web de captación de leads, mediante el cual particulares o empresas pueden solicitar un análisis de su factura eléctrica; y (b) una plataforma SaaS para gestores energéticos, que utilizan la herramienta para analizar las facturas de sus propios clientes, generar informes y hacer seguimiento de contratos.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">2. Roles de tratamiento</h2>
+            <p className="text-sm mb-3">El rol de Fluxira en el tratamiento de datos varía según la categoría del dato:</p>
+            <p className="text-sm mb-2"><span className="font-semibold text-gray-800">Fluxira (Mario Domínguez Troncoso) como RESPONSABLE del tratamiento:</span> Fluxira determina los fines y medios del tratamiento de los datos de la cuenta del gestor energético: nombre, dirección de correo electrónico, nombre de la gestoría, logotipo y registros de envíos de email realizados desde la plataforma.</p>
+            <p className="text-sm"><span className="font-semibold text-gray-800">Fluxira como ENCARGADO del tratamiento (art. 28 RGPD):</span> Respecto a los datos de los clientes del gestor —nombre o etiqueta del cliente, correo electrónico del cliente, CUPS, facturas en PDF, datos extraídos de las facturas, informes generados e historial de análisis— Fluxira actúa únicamente como encargado del tratamiento. El RESPONSABLE de dichos datos es el gestor energético, quien los cede a Fluxira exclusivamente para la prestación del servicio contratado.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">3. Base jurídica</h2>
+            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
+              <li><span className="font-semibold text-gray-800">Cuenta de gestor:</span> ejecución del contrato de servicio (art. 6.1.b RGPD).</li>
+              <li><span className="font-semibold text-gray-800">Formulario web de captación:</span> consentimiento del interesado (art. 6.1.a RGPD), otorgado de forma expresa mediante la casilla de aceptación del formulario.</li>
+            </ul>
+            <p className="text-sm mt-3">El consentimiento puede retirarse en cualquier momento, sin que ello afecte a la licitud del tratamiento previo a su retirada.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">4. Destinatarios y subencargados</h2>
+            <p className="text-sm mb-3">Para la prestación del servicio se utilizan los siguientes proveedores tecnológicos, que actúan como subencargados del tratamiento:</p>
+            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
+              <li><span className="font-semibold text-gray-800">Vercel</span> — alojamiento de la aplicación web.</li>
+              <li><span className="font-semibold text-gray-800">Railway</span> — servidor de aplicaciones y base de datos, incluidos los archivos PDF almacenados.</li>
+              <li><span className="font-semibold text-gray-800">Google Gemini API</span> — lectura automática de las facturas mediante IA para extracción de datos.</li>
+              <li><span className="font-semibold text-gray-800">Resend</span> — servicio de envío de emails (informes a clientes del gestor).</li>
+              <li><span className="font-semibold text-gray-800">Google (Gmail)</span> — buzón de recepción de los leads del formulario web.</li>
+            </ul>
+            {/* TODO: añadir cuando se confirme el plan de pago de Gemini */}
+            <p className="text-sm mt-3">Algunos de estos proveedores pueden estar ubicados en Estados Unidos. Las transferencias internacionales se amparan en el Marco de Privacidad UE-EE. UU. (EU-US Data Privacy Framework) o, en su caso, en cláusulas contractuales tipo aprobadas por la Comisión Europea.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">5. Plazos de conservación</h2>
+            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
+              <li><span className="font-semibold text-gray-800">Leads (formulario web):</span> 6 meses desde la recepción, tras los cuales serán eliminados.</li>
+              <li><span className="font-semibold text-gray-800">Plataforma:</span> mientras la cuenta del gestor esté activa. Tras la baja o solicitud de supresión, los datos del gestor y los de sus clientes (PDFs, informes, historial) se eliminarán en un plazo máximo de 30 días.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">6. Decisiones automatizadas</h2>
+            <p className="text-sm">El análisis energético es un cálculo automático que el gestor revisa y sobre el que decide. No se adoptan decisiones con efectos jurídicos ni significativos sobre los interesados basadas exclusivamente en tratamiento automatizado (art. 22 RGPD).</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">7. Medidas de seguridad</h2>
+            <p className="text-sm mb-3">Se aplican las siguientes medidas técnicas y organizativas para garantizar la seguridad de los datos:</p>
+            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
+              <li>Autenticación mediante token JWT; cada gestor accede únicamente a sus propios clientes e informes.</li>
+              <li>Contraseñas almacenadas con hash bcrypt, nunca en texto plano.</li>
+              <li>Comunicaciones cifradas mediante HTTPS.</li>
+              <li>Validación del tipo y tamaño de los archivos subidos.</li>
+              <li>Los registros de actividad no incluyen el código CUPS completo, solo los últimos caracteres.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">8. Almacenamiento en el navegador</h2>
+            <p className="text-sm">El token de sesión se almacena en <code className="bg-gray-100 px-1 rounded text-xs">localStorage</code> del navegador (no en cookies). Es un dato técnico necesario para mantener la sesión y no requiere consentimiento de cookies.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">9. Responsable del tratamiento</h2>
             <ul className="space-y-1 text-sm">
               <li><span className="font-semibold text-gray-800">Titular:</span> Mario Domínguez Troncoso</li>
-              <li><span className="font-semibold text-gray-800">NIF:</span> 49343736L</li>
-              <li><span className="font-semibold text-gray-800">Domicilio:</span> Calle José Zorrilla nº7, Dúplex 8, 11540 Sanlúcar de Barrameda, Cádiz.</li>
               <li><span className="font-semibold text-gray-800">Correo electrónico:</span> mario@fluxira.es</li>
               <li><span className="font-semibold text-gray-800">Sitio web:</span> https://fluxira.es</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">2. Datos que recogemos</h2>
-            <p className="text-sm mb-3">A través del formulario de este sitio web recogemos:</p>
-            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
-              <li>Nombre o nombre del negocio</li>
-              <li>Teléfono de contacto</li>
-              <li>Correo electrónico (opcional)</li>
-              <li>Factura de electricidad en formato PDF, que puede contener datos identificativos del titular del suministro (nombre, dirección de suministro, CUPS, número de contrato, datos de consumo y facturación)</li>
-            </ul>
-            <p className="text-sm mt-3">No recogemos categorías especiales de datos personales.</p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">3. Finalidad del tratamiento</h2>
-            <p className="text-sm mb-3">Los datos se tratan con las siguientes finalidades:</p>
-            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
-              <li>Analizar la factura eléctrica facilitada para identificar posibles ahorros en la potencia contratada, energía reactiva u otros conceptos facturables.</li>
-              <li>Ponerse en contacto con el usuario para comunicarle el resultado del análisis.</li>
-              <li>En su caso, gestionar la prestación del servicio contratado y su facturación.</li>
-            </ul>
-            <p className="text-sm mt-3">No se realizan decisiones automatizadas ni elaboración de perfiles.</p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">4. Base jurídica</h2>
-            <p className="text-sm mb-3">La base legal para el tratamiento es el consentimiento del interesado (art. 6.1.a RGPD), otorgado de forma expresa mediante la casilla de aceptación del formulario. En caso de que se formalice una relación contractual, la base será la ejecución de un contrato (art. 6.1.b RGPD).</p>
-            <p className="text-sm">El consentimiento puede retirarse en cualquier momento, sin que ello afecte a la licitud del tratamiento previo a su retirada.</p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">5. Conservación de los datos</h2>
-            <p className="text-sm mb-3">Los datos y las facturas remitidas se conservarán:</p>
-            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
-              <li>Si no se llega a contratar el servicio: durante un máximo de 6 meses desde su recepción, tras los cuales serán eliminados.</li>
-              <li>Si se contrata el servicio: durante la vigencia de la relación y, posteriormente, durante los plazos legalmente exigibles en materia fiscal y mercantil.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">6. Destinatarios y cesiones</h2>
-            <p className="text-sm mb-3">Con carácter general, los datos no se ceden a terceros.</p>
-            <p className="text-sm mb-3">No obstante, para la prestación del servicio se utilizan proveedores tecnológicos que actúan como encargados del tratamiento:</p>
-            <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
-              <li>Vercel Inc. (alojamiento del sitio web)</li>
-              <li>Google LLC (servicio de correo electrónico para la recepción de los formularios)</li>
-            </ul>
-            <p className="text-sm mt-3">Adicionalmente, en caso de que el usuario solicite expresamente la tramitación de una modificación de potencia contratada o un cambio de comercializadora, sus datos podrán ser comunicados a la comercializadora o distribuidora eléctrica correspondiente, únicamente con su autorización previa y para dicha finalidad.</p>
-            <p className="text-sm mt-3">Algunos de estos proveedores pueden implicar transferencias internacionales de datos, amparadas en las garantías previstas en el Capítulo V del RGPD.</p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">7. Derechos del interesado</h2>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">10. Derechos del interesado</h2>
             <p className="text-sm mb-3">El usuario puede ejercer los siguientes derechos:</p>
             <ul className="space-y-1.5 text-sm list-disc list-inside marker:text-[#0087A5]">
               <li>Acceso a sus datos personales</li>
@@ -97,17 +111,12 @@ export default function Privacidad() {
               <li>Portabilidad de los datos</li>
             </ul>
             <p className="text-sm mt-3">Para ejercerlos, puede dirigirse a <a href="mailto:mario@fluxira.es" className="text-[#0087A5] hover:underline font-medium">mario@fluxira.es</a>, indicando el derecho que desea ejercer y acompañando copia de un documento identificativo.</p>
-            <p className="text-sm mt-3">Asimismo, tiene derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer" className="text-[#0087A5] hover:underline font-medium">www.aepd.es</a>) si considera que el tratamiento no se ajusta a la normativa vigente.</p>
+            <p className="text-sm mt-3 text-gray-500">Los clientes finales del gestor que deseen ejercer derechos sobre los datos de sus facturas (acceso, rectificación, supresión, etc.) deben dirigirse directamente al gestor energético, que es el responsable del tratamiento de dichos datos.</p>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">8. Medidas de seguridad</h2>
-            <p className="text-sm">Se aplican las medidas técnicas y organizativas necesarias para garantizar la seguridad de los datos y evitar su alteración, pérdida, tratamiento o acceso no autorizado, de acuerdo con el estado de la tecnología y la naturaleza de los datos tratados.</p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">9. Modificaciones</h2>
-            <p className="text-sm">Esta política podrá ser modificada para adaptarla a cambios normativos o en los servicios prestados. Se recomienda su consulta periódica.</p>
+            <h2 className="text-base font-bold text-[#0087A5] uppercase tracking-wide mb-3">11. Reclamación ante la AEPD</h2>
+            <p className="text-sm">Tiene derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer" className="text-[#0087A5] hover:underline font-medium">www.aepd.es</a>) si considera que el tratamiento no se ajusta a la normativa vigente.</p>
           </section>
 
         </div>
