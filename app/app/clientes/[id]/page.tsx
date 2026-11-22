@@ -65,6 +65,13 @@ export default function DetalleCliente() {
   const [guardandoFechaFin, setGuardandoFechaFin] = useState(false);
   const [aceptandoSugerida, setAceptandoSugerida] = useState(false);
 
+  // --- CUPS ---
+  const [cupsCliente, setCupsCliente] = useState<string | null>(null);
+  const [editandoCups, setEditandoCups] = useState(false);
+  const [cupsBorrador, setCupsBorrador] = useState('');
+  const [guardandoCups, setGuardandoCups] = useState(false);
+  const [errorCups, setErrorCups] = useState('');
+
   // --- Etiquetas de análisis ---
   const [editandoEtiquetaId, setEditandoEtiquetaId] = useState<number | null>(null);
   const [etiquetaBorrador, setEtiquetaBorrador] = useState('');
@@ -176,6 +183,7 @@ export default function DetalleCliente() {
           setFechaFinOrigen(encontrado.fecha_fin_origen || null);
           setDiasRestantes(encontrado.dias_restantes ?? null);
           setFechaFinSugerida(encontrado.fecha_fin_sugerida || null);
+          setCupsCliente(encontrado.cups || null);
         }
       }
       if (response.status === 404) {
@@ -248,6 +256,51 @@ export default function DetalleCliente() {
       }
     } catch {}
     finally { setGuardandoFechaFin(false); }
+  };
+
+  const normalizarCups = (raw: string): string | null => {
+    const norm = raw.replace(/[\s\-]/g, '').toUpperCase();
+    if (norm.length < 20) return null;
+    const check = norm.slice(0, 20);
+    if (!/^ES\d{16}[A-Za-z]{2}$/.test(check)) return null;
+    return norm;
+  };
+
+  const guardarCups = async () => {
+    const token = localStorage.getItem('fluxira_token');
+    if (!token) return;
+    setErrorCups('');
+    const valorTrim = cupsBorrador.trim();
+    let cupsEnviar: string;
+    if (valorTrim === '') {
+      cupsEnviar = '';
+    } else {
+      const norm = normalizarCups(valorTrim);
+      if (!norm) {
+        setErrorCups('Formato no válido. Debe empezar por ES, 16 dígitos y 2 letras (p. ej. ES1234567890123456AB).');
+        return;
+      }
+      cupsEnviar = norm;
+    }
+    setGuardandoCups(true);
+    try {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ cups: cupsEnviar }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setErrorCups(data.detail || 'No se pudo guardar el CUPS.');
+        return;
+      }
+      setCupsCliente(cupsEnviar || null);
+      setEditandoCups(false);
+    } catch {
+      setErrorCups('No se pudo conectar con el servidor.');
+    } finally {
+      setGuardandoCups(false);
+    }
   };
 
   const quitarFechaFin = async () => {
@@ -605,6 +658,79 @@ export default function DetalleCliente() {
             )}
           </div>
           {/* --- fin insignia --- */}
+
+          {/* --- CUPS --- */}
+          <div className="mt-2">
+            {editandoCups ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={cupsBorrador}
+                    onChange={(e) => { setCupsBorrador(e.target.value); setErrorCups(''); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') guardarCups();
+                      if (e.key === 'Escape') { setEditandoCups(false); setErrorCups(''); }
+                    }}
+                    placeholder="ES1234567890123456AB"
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0087A5] focus:outline-none focus:ring-1 focus:ring-[#0087A5]/30 font-mono w-56"
+                    autoFocus
+                  />
+                  <button
+                    onClick={guardarCups}
+                    disabled={guardandoCups}
+                    className="rounded-lg bg-[#0087A5] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#006e88] disabled:bg-gray-300"
+                  >
+                    {guardandoCups ? '...' : 'Guardar'}
+                  </button>
+                  <button
+                    onClick={() => { setEditandoCups(false); setErrorCups(''); }}
+                    className="text-sm text-gray-400 hover:text-gray-600"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                {cupsBorrador.trim() === '' && (
+                  <p className="text-xs text-amber-600">
+                    Sin CUPS no se comprobará que las facturas sean del mismo suministro.
+                  </p>
+                )}
+                {errorCups && (
+                  <p className="text-xs text-red-500">{errorCups}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                {cupsCliente ? (
+                  <>
+                    <span
+                      title={cupsCliente}
+                      className="inline-flex items-center text-xs font-mono font-medium px-2.5 py-1 rounded-full border bg-gray-50 text-gray-600 border-gray-200 cursor-default"
+                    >
+                      CUPS: {cupsCliente.slice(0, 4)}…{cupsCliente.slice(-6)}
+                    </span>
+                    <button
+                      onClick={() => { setCupsBorrador(cupsCliente); setEditandoCups(true); setErrorCups(''); }}
+                      className="inline-flex items-center gap-1 min-h-[36px] px-2 text-sm text-[#0087A5] hover:text-[#006e88] transition-colors"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                      Editar CUPS
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setCupsBorrador(''); setEditandoCups(true); setErrorCups(''); }}
+                    className="inline-flex items-center gap-1 min-h-[36px] px-3 text-sm text-[#0087A5] border border-dashed border-[#0087A5]/40 rounded-full hover:bg-[#0087A5]/5 transition-colors"
+                  >
+                    + Añadir CUPS
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {/* --- fin CUPS --- */}
         </div>
 
         {/* --- Email del cliente --- */}
